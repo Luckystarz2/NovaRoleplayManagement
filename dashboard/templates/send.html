@@ -2,13 +2,15 @@
 
 {% block content %}
 
-<div class="card">
-    <h2>✅ Patrol Sent</h2>
-    <p>Your patrol announcement has been successfully queued and sent to Discord.</p>
+<h1>Send Message</h1>
 
-    <a href="/patrol">
-        <button>Back</button>
-    </a>
+<div class="card">
+
+    <input type="text" placeholder="Channel ID">
+    <textarea placeholder="Message content"></textarea>
+
+    <button>Send</button>
+
 </div>
 
 {% endblock %}
