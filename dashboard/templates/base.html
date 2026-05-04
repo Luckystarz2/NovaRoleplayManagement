@@ -1,33 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>Nova Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
-<div class="container">
+<div class="sidebar">
+    <h2>Nova Panel</h2>
+    <a href="/">Dashboard</a>
+    <a href="/patrol">Patrol</a>
+    <a href="/send">Send</a>
+</div>
 
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-        <div class="logo">Nova Panel</div>
-
-        <a href="/" class="nav-item">📊 Dashboard</a>
-        <a href="/send" class="nav-item">📨 Send Message</a>
-        <a href="/patrol" class="nav-item">🚓 Patrol</a>
-
-        <div class="bottom-info">
-            <div class="status-dot"></div>
-            Bot Online
-        </div>
-    </div>
-
-    <!-- MAIN CONTENT -->
-    <div class="main">
-        {% block content %}{% endblock %}
-    </div>
-
+<div class="main">
+    {% block content %}{% endblock %}
 </div>
 
 </body>

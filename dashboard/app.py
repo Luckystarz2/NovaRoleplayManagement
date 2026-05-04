@@ -4,12 +4,11 @@ import os
 
 app = Flask(__name__)
 
-BOT_API = os.getenv("BOT_API_URL", "http://localhost:5001")
+BOT_API_URL = os.getenv("BOT_API_URL", "http://localhost:5001")
 
-
-# -------------------------
-# PAGES
-# -------------------------
+# -------------------
+# DASHBOARD PAGES
+# -------------------
 @app.route("/")
 def dashboard():
     return render_template("dashboard.html")
@@ -25,61 +24,32 @@ def send():
     return render_template("send.html")
 
 
-# -------------------------
-# BOT STATUS
-# -------------------------
-@app.route("/api/status")
-def status():
-    try:
-        r = requests.get(f"{BOT_API}/status")
-        return jsonify(r.json())
-    except:
-        return jsonify({"online": False})
-
-
-# -------------------------
-# UPDATE STATUS
-# -------------------------
-@app.route("/api/status/set", methods=["POST"])
+# -------------------
+# API: SET STATUS
+# -------------------
+@app.route("/api/status", methods=["POST"])
 def set_status():
+    data = request.json
+
     try:
-        r = requests.post(
-            f"{BOT_API}/status/set",
-            json=request.json
-        )
+        r = requests.post(f"{BOT_API_URL}/set-status", json=data)
         return jsonify(r.json())
-    except:
-        return jsonify({"success": False})
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
 
-# -------------------------
-# SEND MESSAGE
-# -------------------------
-@app.route("/api/send", methods=["POST"])
-def send_msg():
+# -------------------
+# API: SEND PATROL
+# -------------------
+@app.route("/api/patrol", methods=["POST"])
+def send_patrol():
+    data = request.json
+
     try:
-        r = requests.post(
-            f"{BOT_API}/send",
-            json=request.json
-        )
+        r = requests.post(f"{BOT_API_URL}/patrol", json=data)
         return jsonify(r.json())
-    except:
-        return jsonify({"success": False})
-
-
-# -------------------------
-# PATROL CREATE
-# -------------------------
-@app.route("/api/patrol/create", methods=["POST"])
-def patrol_create():
-    try:
-        r = requests.post(
-            f"{BOT_API}/patrol/create",
-            json=request.json
-        )
-        return jsonify(r.json())
-    except:
-        return jsonify({"success": False})
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
 
 if __name__ == "__main__":

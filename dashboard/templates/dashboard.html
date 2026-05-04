@@ -1,24 +1,24 @@
 {% extends "base.html" %}
-
 {% block content %}
 
-<h2>📊 Bot Control Panel</h2>
+<h1>Dashboard</h1>
 
-<input id="text" placeholder="Status text">
+<div class="card">
+    <h3>Bot Status</h3>
 
-<select id="type">
-    <option value="playing">Playing</option>
-    <option value="watching">Watching</option>
-    <option value="listening">Listening</option>
-</select>
+    <input id="text" placeholder="Status text">
+    <select id="type">
+        <option value="playing">Playing</option>
+        <option value="watching">Watching</option>
+        <option value="listening">Listening</option>
+    </select>
 
-<br><br>
-
-<button onclick="updateStatus()">Update Status</button>
+    <button onclick="updateStatus()">Update</button>
+</div>
 
 <script>
 function updateStatus() {
-    fetch("/api/status/set", {
+    fetch("/api/status", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
