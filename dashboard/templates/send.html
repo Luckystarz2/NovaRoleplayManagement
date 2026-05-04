@@ -2,15 +2,27 @@
 
 {% block content %}
 
-<h1>Send Message</h1>
+<h2>💬 Send Message</h2>
 
-<div class="card">
+<input id="channel" placeholder="Channel ID">
+<br><br>
 
-    <input type="text" placeholder="Channel ID">
-    <textarea placeholder="Message content"></textarea>
+<textarea id="message" placeholder="Message"></textarea>
+<br><br>
 
-    <button>Send</button>
+<button onclick="send()">Send</button>
 
-</div>
+<script>
+function send() {
+    fetch("/api/send", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            channel: channel.value,
+            message: message.value
+        })
+    })
+}
+</script>
 
 {% endblock %}

@@ -2,10 +2,26 @@
 
 {% block content %}
 
-<h1>Patrol Control</h1>
+<h2>🚓 Create Patrol</h2>
 
-<div class="card">
-    <p>Patrol tools will go here</p>
-</div>
+<input id="date" placeholder="Date">
+<br><br>
+<input id="time" placeholder="Time">
+<br><br>
+
+<button onclick="create()">Create Patrol</button>
+
+<script>
+function create() {
+    fetch("/api/patrol/create", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            date: date.value,
+            time: time.value
+        })
+    })
+}
+</script>
 
 {% endblock %}

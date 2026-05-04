@@ -38,31 +38,44 @@ def status():
 
 
 # -------------------------
-# RESTART BOT
+# UPDATE STATUS
 # -------------------------
-@app.route("/api/restart", methods=["POST"])
-def restart():
+@app.route("/api/status/set", methods=["POST"])
+def set_status():
     try:
-        r = requests.post(f"{BOT_API}/restart")
+        r = requests.post(
+            f"{BOT_API}/status/set",
+            json=request.json
+        )
         return jsonify(r.json())
     except:
         return jsonify({"success": False})
 
 
 # -------------------------
-# CHANGE STATUS
+# SEND MESSAGE
 # -------------------------
-@app.route("/api/status/set", methods=["POST"])
-def set_status():
-    data = request.json
-
+@app.route("/api/send", methods=["POST"])
+def send_msg():
     try:
         r = requests.post(
-            f"{BOT_API}/status/set",
-            json={
-                "type": data.get("type"),
-                "text": data.get("text")
-            }
+            f"{BOT_API}/send",
+            json=request.json
+        )
+        return jsonify(r.json())
+    except:
+        return jsonify({"success": False})
+
+
+# -------------------------
+# PATROL CREATE
+# -------------------------
+@app.route("/api/patrol/create", methods=["POST"])
+def patrol_create():
+    try:
+        r = requests.post(
+            f"{BOT_API}/patrol/create",
+            json=request.json
         )
         return jsonify(r.json())
     except:

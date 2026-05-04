@@ -2,25 +2,31 @@
 
 {% block content %}
 
-<h1>Dashboard</h1>
+<h2>📊 Bot Control Panel</h2>
 
-<div class="card-grid">
+<input id="text" placeholder="Status text">
 
-    <div class="card">
-        <h3>Bot Status</h3>
-        <p>Online & Connected</p>
-    </div>
+<select id="type">
+    <option value="playing">Playing</option>
+    <option value="watching">Watching</option>
+    <option value="listening">Listening</option>
+</select>
 
-    <div class="card">
-        <h3>Server Count</h3>
-        <p>Loading...</p>
-    </div>
+<br><br>
 
-    <div class="card">
-        <h3>Latency</h3>
-        <p>Stable</p>
-    </div>
+<button onclick="updateStatus()">Update Status</button>
 
-</div>
+<script>
+function updateStatus() {
+    fetch("/api/status/set", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            text: document.getElementById("text").value,
+            type: document.getElementById("type").value
+        })
+    })
+}
+</script>
 
 {% endblock %}
