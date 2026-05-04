@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="card">
+    <h2>🚨 Patrol Announcement Panel</h2>
+
+    <form method="POST" action="/send">
+        <input name="date" placeholder="Date (e.g. 05/10/2026)" required>
+        <input name="time" placeholder="Time (e.g. 7:30 PM)" required>
+
+        <button type="submit">Send Patrol</button>
+    </form>
+</div>
+
+{% endblock %}
