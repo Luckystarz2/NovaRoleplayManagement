@@ -1,12 +1,14 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 import os
-from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import threading
+import asyncio
 
-load_dotenv()
-
+# ------------------------
+# CONFIG
+# ------------------------
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 intents = discord.Intents.default()
@@ -14,31 +16,40 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-api = Flask(__name__)
-
 # ------------------------
-# STORE STATUS
+# STATUS STORAGE
 # ------------------------
 bot_status = {
     "text": "Nova Roleplay",
     "type": "playing"
 }
 
+# ------------------------
+# FLASK API
+# ------------------------
+api = Flask(__name__)
 
 # ------------------------
-# DISCORD READY
+# READY EVENT
 # ------------------------
 @bot.event
 async def on_ready():
-    print(f"Logged in as {bot.user}")
+    print(f"✅ Logged in as {bot.user}")
+
+    try:
+        synced = await bot.tree.sync()
+        print(f"✅ Synced {len(synced)} slash commands")
+    except Exception as e:
+        print(f"❌ Sync error: {e}")
+
     await update_status()
 
-
+# ------------------------
+# STATUS FUNCTION
+# ------------------------
 async def update_status():
     text = bot_status["text"]
     status_type = bot_status["type"]
-
-    activity = None
 
     if status_type == "playing":
         activity = discord.Game(name=text)
@@ -46,17 +57,48 @@ async def update_status():
         activity = discord.Activity(type=discord.ActivityType.watching, name=text)
     elif status_type == "listening":
         activity = discord.Activity(type=discord.ActivityType.listening, name=text)
+    else:
+        activity = discord.Game(name=text)
 
     await bot.change_presence(activity=activity)
 
-
 # ------------------------
-# COMMANDS
+# PREFIX COMMAND
 # ------------------------
 @bot.command()
 async def ping(ctx):
-    await ctx.send("Pong!")
+    await ctx.send("🏓 Pong!")
 
+# ------------------------
+# SLASH COMMAND: PING
+# ------------------------
+@bot.tree.command(name="ping", description="Check bot response")
+async def slash_ping(interaction: discord.Interaction):
+    await interaction.response.send_message("🏓 Pong!", ephemeral=True)
+
+# ------------------------
+# SLASH COMMAND: PATROL
+# ------------------------
+@bot.tree.command(name="patrolannounce", description="Send a patrol announcement")
+@app_commands.describe(date="Date", time="Time")
+async def patrolannounce(interaction: discord.Interaction, date: str, time: str):
+
+    await interaction.response.defer()  # 🔥 prevents timeout
+
+    embed = discord.Embed(
+        title="🚓 Patrol Announcement",
+        description=f"📅 {date} at {time}\n\n"
+                    "✅ Available\n🟠 Unsure\n❌ Unavailable",
+        color=0x2b2d31
+    )
+
+    msg = await interaction.channel.send(embed=embed)
+
+    await msg.add_reaction("✅")
+    await msg.add_reaction("🟠")
+    await msg.add_reaction("❌")
+
+    await interaction.followup.send("✅ Patrol announcement sent!", ephemeral=True)
 
 # ------------------------
 # API: SET STATUS
@@ -71,37 +113,47 @@ def set_status():
         "type": data.get("type", "playing")
     }
 
-    return {"success": True}
+    asyncio.run_coroutine_threadsafe(update_status(), bot.loop)
 
+    return jsonify({"success": True})
 
 # ------------------------
-# API: PATROL MESSAGE
+# API: PATROL (FROM DASHBOARD)
 # ------------------------
 @api.route("/patrol", methods=["POST"])
-def patrol():
+def patrol_api():
     data = request.json
 
-    channel_id = int(data["channel_id"])
-    channel = bot.get_channel(channel_id)
+    async def send():
+        try:
+            channel = await bot.fetch_channel(int(data["channel_id"]))
 
-    if channel:
-        embed = discord.Embed(
-            title="🚓 Patrol Announcement",
-            description=f"{data['date']} at {data['time']}",
-            color=0x2b2d31
-        )
+            embed = discord.Embed(
+                title="🚓 Patrol Announcement",
+                description=f"📅 {data['date']} at {data['time']}\n\n"
+                            "✅ Available\n🟠 Unsure\n❌ Unavailable",
+                color=0x2b2d31
+            )
 
-        return {"success": True}
+            msg = await channel.send(embed=embed)
 
-    return {"error": "Channel not found"}
+            await msg.add_reaction("✅")
+            await msg.add_reaction("🟠")
+            await msg.add_reaction("❌")
 
+        except Exception as e:
+            print(f"API ERROR: {e}")
+
+    asyncio.run_coroutine_threadsafe(send(), bot.loop)
+
+    return jsonify({"success": True})
 
 # ------------------------
-# RUN BOTH
+# RUN API + BOT
 # ------------------------
 def run_api():
     api.run(host="0.0.0.0", port=5001)
 
-
 threading.Thread(target=run_api).start()
+
 bot.run(TOKEN)
