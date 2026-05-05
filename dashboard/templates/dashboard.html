@@ -2,22 +2,14 @@
 {% block content %}
 
 <style>
-body {
-    font-family: Arial, sans-serif;
-}
-
-/* ---------- CARD STYLE ---------- */
 .card {
-    background: rgba(30, 31, 36, 0.85);
-    backdrop-filter: blur(10px);
+    background: rgba(30, 31, 36, 0.9);
     padding: 20px;
     border-radius: 18px;
     margin-bottom: 20px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    border: 1px solid rgba(255,255,255,0.05);
 }
 
-/* ---------- INPUTS ---------- */
 input, select, textarea {
     width: 100%;
     padding: 12px;
@@ -27,10 +19,8 @@ input, select, textarea {
     border: none;
     background: #2a2c33;
     color: white;
-    outline: none;
 }
 
-/* ---------- BUTTONS ---------- */
 button {
     padding: 12px 16px;
     border: none;
@@ -39,46 +29,110 @@ button {
     color: white;
     cursor: pointer;
     font-weight: bold;
-    transition: 0.2s;
 }
 
 button:hover {
     background: #4752c4;
-    transform: scale(1.02);
 }
 
-/* ---------- STATUS TEXT ---------- */
 .status-msg {
     margin-top: 10px;
     font-size: 14px;
 }
 
-.success {
-    color: #3ba55d;
-}
-
-.error {
-    color: #ed4245;
-}
-
-h1 {
-    margin-bottom: 20px;
-}
-
-/* ---------- TITLE STYLE ---------- */
-h3 {
-    margin-bottom: 10px;
-}
+.success { color: #3ba55d; }
+.error { color: #ed4245; }
 </style>
 
-<h1>📊 Nova Roleplay Dashboard</h1>
+<h1>📊 Nova Dashboard</h1>
 
 <script>
-const API_URL = "https://YOUR-RAILWAY-URL.up.railway.app"; 
-// 🔥 CHANGE THIS TO YOUR RAILWAY LINK
+const API_URL = "https://your-railway-app.up.railway.app"; 
+// 🔥 CHANGE THIS
+
+// ----------------------------
+// SAFE FETCH WRAPPER
+// ----------------------------
+async function safeFetch(url, options) {
+    try {
+        const res = await fetch(url, options);
+        const text = await res.text(); // always read as text first
+
+        try {
+            return JSON.parse(text); // try JSON
+        } catch (e) {
+            return { success: false, error: text }; // fallback HTML/error
+        }
+
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+}
+
+// ----------------------------
+function showResult(id, data) {
+    const el = document.getElementById(id);
+
+    if (data && data.success) {
+        el.innerHTML = "✅ Success!";
+        el.className = "status-msg success";
+    } else {
+        el.innerHTML = "❌ Error: " + (data.error || "Unknown");
+        el.className = "status-msg error";
+    }
+}
+
+// ----------------------------
+// STATUS
+// ----------------------------
+async function updateStatus() {
+    const data = await safeFetch(API_URL + "/set-status", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            text: document.getElementById("text").value,
+            type: document.getElementById("type").value
+        })
+    });
+
+    showResult("statusResult", data);
+}
+
+// ----------------------------
+// PATROL
+// ----------------------------
+async function sendPatrol() {
+    const data = await safeFetch(API_URL + "/patrol", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            date: document.getElementById("date").value,
+            time: document.getElementById("time").value,
+            channel_id: document.getElementById("channel").value
+        })
+    });
+
+    showResult("patrolResult", data);
+}
+
+// ----------------------------
+// SEND MESSAGE
+// ----------------------------
+async function sendMessage() {
+    const data = await safeFetch(API_URL + "/send", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            channel: document.getElementById("msgChannel").value,
+            message: document.getElementById("message").value
+        })
+    });
+
+    showResult("messageResult", data);
+}
 </script>
 
-<!-- ================= STATUS ================= -->
+<!-- STATUS -->
 <div class="card">
     <h3>Bot Status</h3>
 
@@ -95,12 +149,12 @@ const API_URL = "https://YOUR-RAILWAY-URL.up.railway.app";
     <div id="statusResult" class="status-msg"></div>
 </div>
 
-<!-- ================= PATROL ================= -->
+<!-- PATROL -->
 <div class="card">
     <h3>🚓 Patrol Announcement</h3>
 
-    <input id="date" placeholder="Date (e.g. 5/4/2026)">
-    <input id="time" placeholder="Time (e.g. 8:00 PM)">
+    <input id="date" placeholder="Date">
+    <input id="time" placeholder="Time">
     <input id="channel" placeholder="Channel ID">
 
     <button onclick="sendPatrol()">Send Patrol</button>
@@ -108,90 +162,16 @@ const API_URL = "https://YOUR-RAILWAY-URL.up.railway.app";
     <div id="patrolResult" class="status-msg"></div>
 </div>
 
-<!-- ================= SEND MESSAGE ================= -->
+<!-- SEND -->
 <div class="card">
     <h3>💬 Send Message</h3>
 
     <input id="msgChannel" placeholder="Channel ID">
     <textarea id="message" placeholder="Message"></textarea>
 
-    <button onclick="sendMessage()">Send Message</button>
+    <button onclick="sendMessage()">Send</button>
 
     <div id="messageResult" class="status-msg"></div>
 </div>
-
-<script>
-
-async function updateStatus() {
-    try {
-        const res = await fetch(API_URL + "/set-status", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                text: document.getElementById("text").value,
-                type: document.getElementById("type").value
-            })
-        });
-
-        const data = await res.json();
-        showResult("statusResult", data);
-
-    } catch (err) {
-        showResult("statusResult", {error: err.message});
-    }
-}
-
-async function sendPatrol() {
-    try {
-        const res = await fetch(API_URL + "/patrol", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                date: document.getElementById("date").value,
-                time: document.getElementById("time").value,
-                channel_id: document.getElementById("channel").value
-            })
-        });
-
-        const data = await res.json();
-        showResult("patrolResult", data);
-
-    } catch (err) {
-        showResult("patrolResult", {error: err.message});
-    }
-}
-
-async function sendMessage() {
-    try {
-        const res = await fetch(API_URL + "/send", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                channel: document.getElementById("msgChannel").value,
-                message: document.getElementById("message").value
-            })
-        });
-
-        const data = await res.json();
-        showResult("messageResult", data);
-
-    } catch (err) {
-        showResult("messageResult", {error: err.message});
-    }
-}
-
-function showResult(id, data) {
-    const el = document.getElementById(id);
-
-    if (data && data.success) {
-        el.innerHTML = "✅ Success!";
-        el.className = "status-msg success";
-    } else {
-        el.innerHTML = "❌ Error: " + (data.error || "Unknown");
-        el.className = "status-msg error";
-    }
-}
-
-</script>
 
 {% endblock %}
