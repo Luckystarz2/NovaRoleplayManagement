@@ -5,45 +5,38 @@ import os
 import asyncio
 import threading
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 
-# ======================================================
+# ------------------------
 # ENV
-# ======================================================
+# ------------------------
 TOKEN = os.getenv("DISCORD_TOKEN")
+
+if not TOKEN:
+    print("❌ DISCORD_TOKEN is missing!")
 
 intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ======================================================
+# ------------------------
 # STATUS STORAGE
-# ======================================================
+# ------------------------
 bot_status = {
     "text": "Nova Roleplay",
     "type": "playing"
 }
 
-# ======================================================
-# FLASK API (Railway)
-# ======================================================
+# ------------------------
+# FLASK API
+# ------------------------
 api = Flask(__name__)
+CORS(api)  # 🔥 FIX CORS (IMPORTANT)
 
-# ======================================================
-# SAFE RUN HELPER
-# ======================================================
-def safe_run(coro):
-    """
-    Runs async tasks safely on bot loop.
-    Prevents silent failures when bot is not ready.
-    """
-    if not bot.loop or not bot.is_ready():
-        raise RuntimeError("Bot is not ready yet")
-    return asyncio.run_coroutine_threadsafe(coro, bot.loop)
-
-# ======================================================
+# ------------------------
 # UPDATE STATUS
-# ======================================================
+# ------------------------
 async def update_status():
     text = bot_status["text"]
     status_type = bot_status["type"]
@@ -51,28 +44,20 @@ async def update_status():
     if status_type == "playing":
         activity = discord.Game(name=text)
     elif status_type == "watching":
-        activity = discord.Activity(
-            type=discord.ActivityType.watching,
-            name=text
-        )
+        activity = discord.Activity(type=discord.ActivityType.watching, name=text)
     elif status_type == "listening":
-        activity = discord.Activity(
-            type=discord.ActivityType.listening,
-            name=text
-        )
+        activity = discord.Activity(type=discord.ActivityType.listening, name=text)
     else:
         activity = discord.Game(name=text)
 
     await bot.change_presence(activity=activity)
 
-# ======================================================
+# ------------------------
 # READY EVENT
-# ======================================================
+# ------------------------
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user}")
-
-    await asyncio.sleep(2)  # helps Railway stabilize
 
     try:
         synced = await bot.tree.sync()
@@ -82,32 +67,25 @@ async def on_ready():
 
     await update_status()
 
-# ======================================================
-# PREFIX COMMAND
-# ======================================================
+# ------------------------
+# COMMANDS
+# ------------------------
 @bot.command()
 async def ping(ctx):
     await ctx.send("🏓 Pong!")
 
-# ======================================================
-# SLASH COMMAND: PING
-# ======================================================
-@bot.tree.command(name="ping", description="Ping bot")
+@bot.tree.command(name="ping")
 async def ping_slash(interaction: discord.Interaction):
     await interaction.response.send_message("🏓 Pong!", ephemeral=True)
 
-# ======================================================
-# SLASH COMMAND: PATROL
-# ======================================================
-@bot.tree.command(name="patrolannounce", description="Send patrol announcement")
+@bot.tree.command(name="patrolannounce")
 async def patrol(interaction: discord.Interaction, date: str, time: str):
 
     await interaction.response.defer()
 
     embed = discord.Embed(
         title="🚓 Patrol Announcement",
-        description=f"📅 {date} at {time}\n\n"
-                    "✅ Yes\n🟠 Maybe\n❌ No",
+        description=f"📅 {date} at {time}\n\n✅ Yes\n🟠 Maybe\n❌ No",
         color=0x2b2d31
     )
 
@@ -119,37 +97,33 @@ async def patrol(interaction: discord.Interaction, date: str, time: str):
 
     await interaction.followup.send("Sent!", ephemeral=True)
 
-# ======================================================
-# DASHBOARD API: SET STATUS
-# ======================================================
+# ------------------------
+# API: STATUS
+# ------------------------
 @api.route("/set-status", methods=["POST"])
 def set_status():
     global bot_status
 
-    try:
-        data = request.json
+    data = request.json
 
-        bot_status = {
-            "text": data.get("text", "Nova Roleplay"),
-            "type": data.get("type", "playing")
-        }
+    bot_status = {
+        "text": data.get("text", "Nova Roleplay"),
+        "type": data.get("type", "playing")
+    }
 
-        safe_run(update_status())
+    asyncio.run_coroutine_threadsafe(update_status(), bot.loop)
 
-        return jsonify({"success": True})
+    return jsonify({"success": True})
 
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
-
-# ======================================================
-# DASHBOARD API: PATROL
-# ======================================================
+# ------------------------
+# API: PATROL
+# ------------------------
 @api.route("/patrol", methods=["POST"])
 def patrol_api():
-    try:
-        data = request.json
+    data = request.json
 
-        async def send():
+    async def send():
+        try:
             channel = await bot.fetch_channel(int(data["channel_id"]))
 
             embed = discord.Embed(
@@ -165,41 +139,40 @@ def patrol_api():
             await msg.add_reaction("🟠")
             await msg.add_reaction("❌")
 
-        safe_run(send())
+        except Exception as e:
+            print("Patrol error:", e)
 
-        return jsonify({"success": True})
+    asyncio.run_coroutine_threadsafe(send(), bot.loop)
 
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+    return jsonify({"success": True})
 
-# ======================================================
-# DASHBOARD API: SEND MESSAGE
-# ======================================================
+# ------------------------
+# API: SEND MESSAGE
+# ------------------------
 @api.route("/send", methods=["POST"])
 def send_message():
-    try:
-        data = request.json
+    data = request.json
 
-        async def send():
+    async def send():
+        try:
             channel = await bot.fetch_channel(int(data["channel"]))
             await channel.send(data["message"])
+        except Exception as e:
+            print("Send error:", e)
 
-        safe_run(send())
+    asyncio.run_coroutine_threadsafe(send(), bot.loop)
 
-        return jsonify({"success": True})
+    return jsonify({"success": True})
 
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
-
-# ======================================================
-# RUN FLASK API THREAD
-# ======================================================
+# ------------------------
+# RUN FLASK THREAD
+# ------------------------
 def run_api():
     api.run(host="0.0.0.0", port=5001)
 
 threading.Thread(target=run_api, daemon=True).start()
 
-# ======================================================
+# ------------------------
 # RUN BOT
-# ======================================================
+# ------------------------
 bot.run(TOKEN)
