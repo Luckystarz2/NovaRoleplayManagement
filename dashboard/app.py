@@ -4,7 +4,7 @@ import os
 
 app = Flask(__name__)
 
-BOT_API_URL = os.getenv("BOT_API_URL", "http://localhost:5001")
+BOT_API_URL = os.getenv("BOT_API_URL")
 
 # -------------------
 # DASHBOARD PAGES
