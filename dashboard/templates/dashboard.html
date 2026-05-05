@@ -1,15 +1,66 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1>Dashboard</h1>
+<style>
+.card {
+    background: #1e1f24;
+    padding: 20px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+}
 
+h1 {
+    margin-bottom: 20px;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 12px;
+    margin-top: 8px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    border: none;
+    background: #2a2c33;
+    color: white;
+    outline: none;
+}
+
+button {
+    padding: 12px 16px;
+    border: none;
+    border-radius: 12px;
+    background: #5865F2;
+    color: white;
+    cursor: pointer;
+    transition: 0.2s;
+    font-weight: bold;
+}
+
+button:hover {
+    background: #4752c4;
+}
+
+.status-msg {
+    margin-top: 10px;
+    font-size: 14px;
+}
+.success {
+    color: #3ba55d;
+}
+.error {
+    color: #ed4245;
+}
+</style>
+
+<h1>📊 Nova Dashboard</h1>
+
+<!-- STATUS -->
 <div class="card">
     <h3>Bot Status</h3>
 
-    <label>Status Text</label>
-    <input id="text" placeholder="e.g. Managing Nova RP">
-
-    <label>Status Type</label>
+    <input id="text" placeholder="Status text">
+    
     <select id="type">
         <option value="playing">Playing</option>
         <option value="watching">Watching</option>
@@ -18,27 +69,91 @@
 
     <button onclick="updateStatus()">Update Status</button>
 
-    <p id="result"></p>
+    <div id="statusResult" class="status-msg"></div>
+</div>
+
+<!-- PATROL -->
+<div class="card">
+    <h3>🚓 Patrol Announcement</h3>
+
+    <input id="date" placeholder="Date (e.g. 5/4/2026)">
+    <input id="time" placeholder="Time (e.g. 8:00 PM)">
+    <input id="channel" placeholder="Channel ID">
+
+    <button onclick="sendPatrol()">Send Patrol</button>
+
+    <div id="patrolResult" class="status-msg"></div>
+</div>
+
+<!-- SEND MESSAGE -->
+<div class="card">
+    <h3>💬 Send Message</h3>
+
+    <input id="msgChannel" placeholder="Channel ID">
+    <textarea id="message" placeholder="Message"></textarea>
+
+    <button onclick="sendMessage()">Send Message</button>
+
+    <div id="messageResult" class="status-msg"></div>
 </div>
 
 <script>
-function updateStatus() {
-    fetch("/api/status", {
+
+async function updateStatus() {
+    const res = await fetch("/api/status", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
             text: document.getElementById("text").value,
             type: document.getElementById("type").value
         })
-    })
-    .then(r => r.json())
-    .then(data => {
-        document.getElementById("result").innerText = "✅ Updated!";
-    })
-    .catch(err => {
-        document.getElementById("result").innerText = "❌ Error";
     });
+
+    const data = await res.json();
+    showResult("statusResult", data);
 }
+
+async function sendPatrol() {
+    const res = await fetch("/api/patrol", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            date: document.getElementById("date").value,
+            time: document.getElementById("time").value,
+            channel_id: document.getElementById("channel").value
+        })
+    });
+
+    const data = await res.json();
+    showResult("patrolResult", data);
+}
+
+async function sendMessage() {
+    const res = await fetch("/api/send", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            channel: document.getElementById("msgChannel").value,
+            message: document.getElementById("message").value
+        })
+    });
+
+    const data = await res.json();
+    showResult("messageResult", data);
+}
+
+function showResult(id, data) {
+    const el = document.getElementById(id);
+
+    if (data && data.success) {
+        el.innerHTML = "✅ Success!";
+        el.className = "status-msg success";
+    } else {
+        el.innerHTML = "❌ Error: " + (data.error || "Unknown");
+        el.className = "status-msg error";
+    }
+}
+
 </script>
 
 {% endblock %}
