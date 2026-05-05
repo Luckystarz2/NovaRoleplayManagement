@@ -25,7 +25,7 @@ bot_status = {
 }
 
 # ------------------------
-# FLASK API (Railway)
+# FLASK API
 # ------------------------
 api = Flask(__name__)
 
@@ -48,7 +48,7 @@ async def update_status():
     await bot.change_presence(activity=activity)
 
 # ------------------------
-# READY
+# READY EVENT
 # ------------------------
 @bot.event
 async def on_ready():
@@ -58,7 +58,7 @@ async def on_ready():
         synced = await bot.tree.sync()
         print(f"Synced {len(synced)} commands")
     except Exception as e:
-        print(e)
+        print(f"Sync error: {e}")
 
     await update_status()
 
@@ -70,14 +70,14 @@ async def ping(ctx):
     await ctx.send("🏓 Pong!")
 
 # ------------------------
-# SLASH COMMAND
+# SLASH COMMAND: PING
 # ------------------------
 @bot.tree.command(name="ping", description="Ping bot")
 async def ping_slash(interaction: discord.Interaction):
     await interaction.response.send_message("🏓 Pong!", ephemeral=True)
 
 # ------------------------
-# PATROL COMMAND
+# SLASH COMMAND: PATROL
 # ------------------------
 @bot.tree.command(name="patrolannounce", description="Send patrol announcement")
 async def patrol(interaction: discord.Interaction, date: str, time: str):
@@ -98,9 +98,9 @@ async def patrol(interaction: discord.Interaction, date: str, time: str):
 
     await interaction.followup.send("Sent!", ephemeral=True)
 
-# ------------------------
-# API: SET STATUS
-# ------------------------
+# ======================================================
+# 🔥 DASHBOARD API: SET STATUS
+# ======================================================
 @api.route("/set-status", methods=["POST"])
 def set_status():
     global bot_status
@@ -116,39 +116,64 @@ def set_status():
 
     return jsonify({"success": True})
 
-# ------------------------
-# API: PATROL FROM DASHBOARD
-# ------------------------
+# ======================================================
+# 🚓 DASHBOARD API: PATROL
+# ======================================================
 @api.route("/patrol", methods=["POST"])
 def patrol_api():
     data = request.json
 
     async def send():
-        channel = await bot.fetch_channel(int(data["channel_id"]))
+        try:
+            channel = await bot.fetch_channel(int(data["channel_id"]))
 
-        embed = discord.Embed(
-            title="🚓 Patrol Announcement",
-            description=f"📅 {data['date']} at {data['time']}\n\n"
-                        "✅ Yes\n🟠 Maybe\n❌ No",
-            color=0x2b2d31
-        )
+            embed = discord.Embed(
+                title="🚓 Patrol Announcement",
+                description=f"📅 {data['date']} at {data['time']}\n\n"
+                            "✅ Yes\n🟠 Maybe\n❌ No",
+                color=0x2b2d31
+            )
 
-        msg = await channel.send(embed=embed)
+            msg = await channel.send(embed=embed)
 
-        await msg.add_reaction("✅")
-        await msg.add_reaction("🟠")
-        await msg.add_reaction("❌")
+            await msg.add_reaction("✅")
+            await msg.add_reaction("🟠")
+            await msg.add_reaction("❌")
+
+        except Exception as e:
+            print("Patrol API error:", e)
+
+    asyncio.run_coroutine_threadsafe(send(), bot.loop)
+
+    return jsonify({"success": True})
+
+# ======================================================
+# 💬 DASHBOARD API: SEND MESSAGE (THIS WAS MISSING)
+# ======================================================
+@api.route("/send", methods=["POST"])
+def send_message():
+    data = request.json
+
+    async def send():
+        try:
+            channel = await bot.fetch_channel(int(data["channel"]))
+            await channel.send(data["message"])
+        except Exception as e:
+            print("Send API error:", e)
 
     asyncio.run_coroutine_threadsafe(send(), bot.loop)
 
     return jsonify({"success": True})
 
 # ------------------------
-# RUN API THREAD + BOT
+# RUN FLASK API THREAD
 # ------------------------
 def run_api():
     api.run(host="0.0.0.0", port=5001)
 
-threading.Thread(target=run_api).start()
+threading.Thread(target=run_api, daemon=True).start()
 
+# ------------------------
+# RUN BOT
+# ------------------------
 bot.run(TOKEN)

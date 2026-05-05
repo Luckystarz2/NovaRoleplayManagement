@@ -1,26 +1,42 @@
 {% extends "base.html" %}
-
 {% block content %}
 
-<h2>🚓 Create Patrol</h2>
+<h2>🚓 Patrol Announcement Creator</h2>
 
-<input id="date" placeholder="Date">
-<br><br>
-<input id="time" placeholder="Time">
-<br><br>
+<div class="card">
 
-<button onclick="create()">Create Patrol</button>
+    <label>Date</label>
+    <input id="date" placeholder="e.g. 2026-05-04">
+
+    <label>Time</label>
+    <input id="time" placeholder="e.g. 8:00 PM">
+
+    <label>Channel ID</label>
+    <input id="channel" placeholder="Discord Channel ID">
+
+    <button onclick="create()">Send Patrol</button>
+
+    <p id="result"></p>
+</div>
 
 <script>
 function create() {
-    fetch("/api/patrol/create", {
+    fetch("/api/patrol", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
-            date: date.value,
-            time: time.value
+            date: document.getElementById("date").value,
+            time: document.getElementById("time").value,
+            channel_id: document.getElementById("channel").value
         })
     })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById("result").innerText = "✅ Sent!";
+    })
+    .catch(() => {
+        document.getElementById("result").innerText = "❌ Error";
+    });
 }
 </script>
 

@@ -6,14 +6,19 @@
 <div class="card">
     <h3>Bot Status</h3>
 
-    <input id="text" placeholder="Status text">
+    <label>Status Text</label>
+    <input id="text" placeholder="e.g. Managing Nova RP">
+
+    <label>Status Type</label>
     <select id="type">
         <option value="playing">Playing</option>
         <option value="watching">Watching</option>
         <option value="listening">Listening</option>
     </select>
 
-    <button onclick="updateStatus()">Update</button>
+    <button onclick="updateStatus()">Update Status</button>
+
+    <p id="result"></p>
 </div>
 
 <script>
@@ -26,6 +31,13 @@ function updateStatus() {
             type: document.getElementById("type").value
         })
     })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById("result").innerText = "✅ Updated!";
+    })
+    .catch(err => {
+        document.getElementById("result").innerText = "❌ Error";
+    });
 }
 </script>
 

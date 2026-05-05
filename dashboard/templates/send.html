@@ -1,16 +1,20 @@
 {% extends "base.html" %}
-
 {% block content %}
 
 <h2>💬 Send Message</h2>
 
-<input id="channel" placeholder="Channel ID">
-<br><br>
+<div class="card">
 
-<textarea id="message" placeholder="Message"></textarea>
-<br><br>
+    <label>Channel ID</label>
+    <input id="channel">
 
-<button onclick="send()">Send</button>
+    <label>Message</label>
+    <textarea id="message"></textarea>
+
+    <button onclick="send()">Send Message</button>
+
+    <p id="result"></p>
+</div>
 
 <script>
 function send() {
@@ -18,10 +22,17 @@ function send() {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
-            channel: channel.value,
-            message: message.value
+            channel: document.getElementById("channel").value,
+            message: document.getElementById("message").value
         })
     })
+    .then(r => r.json())
+    .then(() => {
+        document.getElementById("result").innerText = "✅ Sent!";
+    })
+    .catch(() => {
+        document.getElementById("result").innerText = "❌ Error";
+    });
 }
 </script>
 
